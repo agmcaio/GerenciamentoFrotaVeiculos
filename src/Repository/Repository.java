@@ -4,15 +4,29 @@ import Enums.ETipoMotorizacao;
 import Entities.Veiculo;
 import Interface.IRepository;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Repository implements IRepository {
+    private static Map<String, ArrayList<String>> marcaEModeloMap = new HashMap<>();
     ArrayList<Veiculo> veiculos = new ArrayList<Veiculo>();
 
+    public Repository(){
+        MapeandoAsMarcasEModelos();
+    }
+
     @Override
-    public Boolean CadastrarVeiculo(Veiculo veiculo) {
+    public Boolean CadastrarVeiculo(Veiculo veiculo) throws Exception{
+        if(!ValidarVeiculo(veiculo.getMarca(), veiculo.getModelo()))
+            throw new Exception("Erro ao cadastrar veiculo: "
+                    + veiculo.getMarca() + "-" + veiculo.getModelo() + ", confira se a marca do carro é do modelo correto");
+
         return veiculos.add(veiculo);
+    }
+
+    private boolean ValidarVeiculo(String marca, String modelo) {
+        ArrayList<String> modelosValidos = marcaEModeloMap.get(marca);
+        return modelosValidos != null && modelosValidos.contains(modelo);
     }
 
     @Override
@@ -24,50 +38,22 @@ public class Repository implements IRepository {
 
     @Override
     public ArrayList<Veiculo> ListarVeiculosMaiorAutonomia() throws Exception{
-        ArrayList<Veiculo> veiculosComMaiorAutonomia = new ArrayList<>();
-        ArrayList<Veiculo> veiculosCopiados = new ArrayList<>(veiculos);
+        List<Veiculo> veiculosOrdenados = veiculos.stream()
+                .sorted(Comparator.comparing(Veiculo::getAutonomia).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
 
-        for(int i = 0; i < 10; i++){
-            Veiculo veiculoComMaiorAutonomia = null;
-            double maiorAutonomia = Double.MIN_VALUE;
-
-            for(Veiculo veiculo : veiculosCopiados)
-                if(veiculo.getAutonomia() > maiorAutonomia){
-                    maiorAutonomia = veiculo.getAutonomia();
-                    veiculoComMaiorAutonomia = veiculo;
-                }
-
-            if (veiculoComMaiorAutonomia != null){
-                veiculosComMaiorAutonomia.add(veiculoComMaiorAutonomia);
-                veiculosCopiados.remove(veiculoComMaiorAutonomia);
-            }
-        }
-
-        return veiculosComMaiorAutonomia;
+        return  new ArrayList<>(veiculosOrdenados);
     }
 
     @Override
     public ArrayList<Veiculo> ListarVeiculosMenorAutonomia() {
-        ArrayList<Veiculo> veiculosComMaiorAutonomia = new ArrayList<>();
-        ArrayList<Veiculo> veiculosCopiados = new ArrayList<>(veiculos);
+        List<Veiculo> veiculosOrdenados = veiculos.stream()
+                .sorted(Comparator.comparing(Veiculo::getAutonomia))
+                .limit(10)
+                .collect(Collectors.toList());
 
-        for(int i = 0; i < 10; i++){
-            Veiculo veiculoComMaiorAutonomia = null;
-            double maiorAutonomia = Double.MIN_VALUE;
-
-            for(Veiculo veiculo : veiculosCopiados)
-                if(veiculo.getAutonomia() > maiorAutonomia){
-                    maiorAutonomia = veiculo.getAutonomia();
-                    veiculoComMaiorAutonomia = veiculo;
-                }
-
-            if (veiculoComMaiorAutonomia != null){
-                veiculosComMaiorAutonomia.add(veiculoComMaiorAutonomia);
-                veiculosCopiados.remove(veiculoComMaiorAutonomia);
-            }
-        }
-
-        return veiculosComMaiorAutonomia;
+        return  new ArrayList<>(veiculosOrdenados);
     }
 
     @Override
@@ -88,16 +74,55 @@ public class Repository implements IRepository {
             if(qtdDisponivel >= qtdCombustivel){
                 var enchendoTanque = (int)Math.round(qtdDisponivel - qtdCombustivel);
                 veiculo.setCapacidadeDeTanque(enchendoTanque);
+                System.out.println(veiculo.getModelo() + " abastecido com sucesso - Capacidade atual do tanque: " + veiculo.getCapacidadeDeTanque());
             } else{
                 System.out.println("A quantidade de combustivel que você deseja inserir ultrapassa a capacidade do tanque do " + veiculo.getModelo());
             }
         }
-
-        System.out.println("Frota abastecida com sucesso");
     }
 
     @Override
-    public ArrayList<Veiculo> ListarVeiculosPorAutonomiaInferior(String autonomia) {
-        return null;
+    public ArrayList<Veiculo> ListarVeiculosPorAutonomiaInferior(double autonomia) throws Exception{
+        ArrayList<Veiculo> veiculosComAutonomiaInferior = new ArrayList<>();
+
+        for(Veiculo veiculo : veiculos)
+            if(veiculo.getAutonomia() < autonomia)
+                veiculosComAutonomiaInferior.add(veiculo);
+
+        if(veiculosComAutonomiaInferior.isEmpty())
+            throw new Exception("Não há veiculos com autonomia inferior ao que foi inserido.");
+
+        return veiculosComAutonomiaInferior;
+    }
+
+    private static void MapeandoAsMarcasEModelos()
+    {
+        marcaEModeloMap.put("chevrolet", new ArrayList<>());
+        marcaEModeloMap.put("ford", new ArrayList<>());
+        marcaEModeloMap.put("volkswagen", new ArrayList<>());
+        marcaEModeloMap.put("fiat", new ArrayList<>());
+        marcaEModeloMap.put("renault", new ArrayList<>());
+        marcaEModeloMap.put("toyota", new ArrayList<>());
+        marcaEModeloMap.put("hyundai", new ArrayList<>());
+        marcaEModeloMap.put("honda", new ArrayList<>());
+        marcaEModeloMap.put("volkswagen", new ArrayList<>());
+        marcaEModeloMap.put("fiat", new ArrayList<>());
+        marcaEModeloMap.put("byd", new ArrayList<>());
+
+        marcaEModeloMap.get("chevrolet").add("onix");
+        marcaEModeloMap.get("chevrolet").add("classic");
+        marcaEModeloMap.get("volkswagen").add("fox");
+        marcaEModeloMap.get("volkswagen").add("gol");
+        marcaEModeloMap.get("fiat").add("uno");
+        marcaEModeloMap.get("fiat").add("palio");
+        marcaEModeloMap.get("renault").add("duster");
+        marcaEModeloMap.get("renault").add("kwid");
+        marcaEModeloMap.get("toyota").add("corolla");
+        marcaEModeloMap.get("toyota").add("etios");
+        marcaEModeloMap.get("hyundai").add("hb20");
+        marcaEModeloMap.get("honda").add("civic");
+        marcaEModeloMap.get("ford").add("ka");
+        marcaEModeloMap.get("ford").add("fiesta");
+        marcaEModeloMap.get("byd").add("dolphin");
     }
 }
